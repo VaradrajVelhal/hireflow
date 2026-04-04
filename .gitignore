@@ -1,1 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+media/
+
+# Environment variables
+.env
+
+# Migrations (optional — keep if working in team)
+# */migrations/*
+# !*/migrations/__init__.py
+
+# Static files (if collected)
+staticfiles/
+
+# Node
+node_modules/
+
+# Build files
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env files
 .env
