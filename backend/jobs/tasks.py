@@ -1,11 +1,9 @@
 from datetime import date
 from django.core.mail import send_mail
-
-from backend.hireflow import settings
-from backend.hireflow.settings import EMAIL_HOST_USER
-from .models import Application
+from django.conf import settings
+from .models import Application, Job
 import requests
-from .models import Job
+
 
 def send_followup_reminders():
     print("FUNCTION STARTED")
@@ -26,6 +24,7 @@ def send_followup_reminders():
             [app.user.email]
         )
 
+
 def fetch_jobs_from_api():
     print("Fetching jobs...")
 
@@ -37,7 +36,7 @@ def fetch_jobs_from_api():
     data = response.json()
     print("Total jobs from API:", len(data["jobs"]))
 
-    for item in data["jobs"][:5]:
+    for item in data["jobs"][:50]:
         print("Processing:", item["title"])
 
         title = item["title"]
@@ -58,4 +57,3 @@ def fetch_jobs_from_api():
         )
 
         print("Added:", title)
-

@@ -7,14 +7,16 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils.timezone import now
 from .utils import calculate_match_score
 from datetime import timedelta
+from rest_framework.generics import ListAPIView
 
+class JobListView(ListAPIView):
+    serializer_class = JobSerializer
 
-class JobListView(APIView):
-    def get(self, request):
+    def get_queryset(self):
         jobs = Job.objects.all()
 
-        location = request.GET.get('location')
-        keyword = request.GET.get('keyword')
+        location = self.request.GET.get('location')
+        keyword = self.request.GET.get('keyword')
 
         if location:
             jobs = jobs.filter(location__icontains=location)
@@ -22,8 +24,7 @@ class JobListView(APIView):
         if keyword:
             jobs = jobs.filter(title__icontains=keyword)
 
-        serializer = JobSerializer(jobs, many=True)
-        return Response(serializer.data)
+        return jobs.order_by('-id')
 
 
 class ApplicationCreateView(APIView):
