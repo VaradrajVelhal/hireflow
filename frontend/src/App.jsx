@@ -8,10 +8,11 @@ import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
-
+import ScrollToTop from "./components/ScrollToTop";
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
