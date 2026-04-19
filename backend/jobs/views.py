@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from .utils import calculate_match_score
 from datetime import timedelta
 from rest_framework.generics import ListAPIView
+from datetime import date
 
 class JobListView(ListAPIView):
     serializer_class = JobSerializer
@@ -127,7 +128,6 @@ class MatchScoreView(APIView):
             "match_score": score
         })
     
-from datetime import date
 
 class DueTodayView(APIView):
     permission_classes = [IsAuthenticated]

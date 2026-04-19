@@ -1,14 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from django.urls import reverse
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-from .serializers import RegisterSerializer
-from .models import User
-from .utils import email_token_generator
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.exceptions import AuthenticationFailed
+from django.contrib.auth import get_user_model, authenticate
 from django.shortcuts import get_object_or_404
+from .serializers import RegisterSerializer
+from .utils import email_token_generator
+from rest_framework_simplejwt.tokens import RefreshToken
+
+User = get_user_model()
 
 
 class RegisterView(APIView):
@@ -47,9 +49,12 @@ class RegisterView(APIView):
 
             print("\nVERIFY LINK:\n", verify_url, "\n")
 
-            return Response({"message": "User created. Check email."})
+            return Response(
+                {"message": "Registration successful. Please verify your email before logging in."},
+                status=status.HTTP_201_CREATED
+            )
 
-        return Response(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class VerifyEmailView(APIView):
@@ -61,16 +66,34 @@ class VerifyEmailView(APIView):
             user.save()
             return Response({"message": "Email verified"})
 
-        return Response({"error": "Invalid token"})
+        return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomLoginView(TokenObtainPairView):
+class CustomLoginView(APIView):
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+        username = request.data.get('username')
+        password = request.data.get('password')
 
-        user = User.objects.get(username=request.data['username'])
+        user = authenticate(request, username=username, password=password)
+
+        if user is None:
+            return Response(
+                {"message": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
         if not user.is_verified:
-            raise AuthenticationFailed("Email not verified")
+            return Response(
+                {
+                    "error": "email_not_verified",
+                    "message": "Please verify your email before logging in."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        return response
+        # User is authenticated and verified — issue JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        })

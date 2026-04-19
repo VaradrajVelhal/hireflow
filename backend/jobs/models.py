@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class Job(models.Model):
     title = models.CharField(max_length=255)
@@ -11,9 +12,7 @@ class Job(models.Model):
     
 
     def __str__(self):
-        return self.title
-    
-from django.conf import settings
+        return self.title    
 
 class Application(models.Model):
     STATUS_CHOICES = [
