@@ -154,3 +154,4 @@ CRONJOBS = [
     ('0 */6 * * *', 'jobs.tasks.fetch_jobs_from_api'),  # every 6 hours
 ]
 CORS_ALLOW_ALL_ORIGINS = True
+EMAIL_TIMEOUT = 10

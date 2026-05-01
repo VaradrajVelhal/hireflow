@@ -45,7 +45,10 @@ class RegisterView(APIView):
             )
 
             email.attach_alternative(html_content, "text/html")
-            email.send()
+            try:
+                email.send()
+            except Exception as e:
+                print(f"Failed to send email: {e}")
 
             print("\nVERIFY LINK:\n", verify_url, "\n")
 
