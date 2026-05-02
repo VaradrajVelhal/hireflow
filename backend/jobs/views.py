@@ -146,3 +146,11 @@ class DueTodayView(APIView):
             "count": apps.count(),
             "applications": serializer.data
         })
+    
+
+from .tasks import fetch_jobs_from_api
+from rest_framework.decorators import api_view
+@api_view(['GET'])
+def fetch_jobs_now(request):
+    fetch_jobs_from_api()
+    return Response({"message": "Jobs fetched"})
