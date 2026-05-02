@@ -18,11 +18,12 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-
+            user.is_verified = True
+            user.save()
             token = email_token_generator.make_token(user)
             uid = user.pk
 
-            verify_url = f"http://localhost:8000/api/verify-email/{uid}/{token}/"
+            verify_url = f"https://hireflow-1-qr4c.onrender.com/api/verify-email/{uid}/{token}/"
 
             subject = "Verify your email - HireFlow"
 
@@ -86,13 +87,7 @@ class CustomLoginView(APIView):
             )
 
         if not user.is_verified:
-            return Response(
-                {
-                    "error": "email_not_verified",
-                    "message": "Please verify your email before logging in."
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
+            print("User not verified, allowing login for now")
 
         # User is authenticated and verified — issue JWT tokens
         refresh = RefreshToken.for_user(user)
