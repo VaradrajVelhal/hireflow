@@ -139,15 +139,7 @@ SIMPLE_JWT = {
 }
 AUTH_USER_MODEL = 'accounts.User'
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-
 DEFAULT_FROM_EMAIL = "HireFlow <varadrajvelhal1@gmail.com>"
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
 
 CRONJOBS = [
     ('0 9 * * *', 'jobs.tasks.send_followup_reminders'),
@@ -155,3 +147,4 @@ CRONJOBS = [
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 EMAIL_TIMEOUT = 10
+SENDGRID_API_KEY = config('SENDGRID_API_KEY')

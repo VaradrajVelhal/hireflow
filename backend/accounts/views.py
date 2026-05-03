@@ -2,13 +2,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.urls import reverse
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
 from django.contrib.auth import get_user_model, authenticate
 from django.shortcuts import get_object_or_404
 from .serializers import RegisterSerializer
 from .utils import email_token_generator
 from rest_framework_simplejwt.tokens import RefreshToken
+from sendgrid.helpers.mail import Mail
+from sendgrid import SendGridAPIClient
+
 
 User = get_user_model()
 
@@ -16,10 +18,14 @@ User = get_user_model()
 class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
+
         if serializer.is_valid():
             user = serializer.save()
+
+            # Allow login even if email fails
             user.is_verified = True
             user.save()
+
             token = email_token_generator.make_token(user)
             uid = user.pk
 
@@ -27,34 +33,39 @@ class RegisterView(APIView):
 
             subject = "Verify your email - HireFlow"
 
-            text_content = f"Click here: {verify_url}"
-
             html_content = f"""
             <h2>Welcome to HireFlow</h2>
             <p>Hi {user.username},</p>
             <p>Please verify your email:</p>
             <a href="{verify_url}" style="padding:10px 15px; background:blue; color:white;">
-            Verify Email
+                Verify Email
             </a>
             """
 
-            email = EmailMultiAlternatives(
-                subject,
-                text_content,
-                settings.EMAIL_HOST_USER,
-                [user.email]
-            )
-
-            email.attach_alternative(html_content, "text/html")
+            # ✅ SendGrid API (NOT SMTP)
             try:
-                email.send()
+                message = Mail(
+                    from_email="varadrajvelhal1@gmail.com",  # MUST match SendGrid verified sender
+                    to_emails=user.email,
+                    subject=subject,
+                    html_content=html_content
+                )
+
+                sg = SendGridAPIClient(settings.SENDGRID_API_KEY)
+                response = sg.send(message)
+
+                if response.status_code in [200, 202]:
+                    print("Email sent successfully")
+                else:
+                    print("SendGrid failed with status:", response.status_code)
+
             except Exception as e:
-                print(f"Failed to send email: {e}")
+                print("SendGrid failed:", str(e))
 
             print("\nVERIFY LINK:\n", verify_url, "\n")
 
             return Response(
-                {"message": "Registration successful. Please verify your email before logging in."},
+                {"message": "Registration successful. You can login now."},
                 status=status.HTTP_201_CREATED
             )
 
