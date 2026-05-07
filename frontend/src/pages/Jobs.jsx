@@ -11,6 +11,7 @@ function Jobs() {
   const [location, setLocation] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [debouncedLocation, setDebouncedLocation] = useState("");
+  const [applyingIds, setApplyingIds] = useState(new Set());
 
   // Debounce logic
   useEffect(() => {
@@ -61,16 +62,32 @@ function Jobs() {
   };
 
   const applyJob = async (jobId) => {
+    if (applyingIds.has(jobId)) return;
+
+    setApplyingIds((prev) => new Set(prev).add(jobId));
     try {
       await API.post("apply/", {
         job: jobId,
         status: "applied",
         applied_via: "Website",
       });
-      alert("Applied and tracking started!");
+      
+      // Update local state to reflect the application
+      setJobs(prevJobs => prevJobs.map(job => 
+        job.id === jobId ? { ...job, is_applied: true } : job
+      ));
+      
+      alert("Applied successfully!");
     } catch (err) {
       console.error(err);
-      alert("Error applying");
+      const errorMsg = err.response?.data?.error || "Error applying";
+      alert(errorMsg);
+    } finally {
+      setApplyingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
     }
   };
 
@@ -189,9 +206,26 @@ function Jobs() {
                       </button>
                       <button
                         onClick={() => applyJob(job.id)}
-                        className="btn btn-primary text-sm px-8"
+                        disabled={job.is_applied || applyingIds.has(job.id)}
+                        className={`btn text-sm px-8 min-w-[140px] ${
+                          job.is_applied 
+                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:scale-100 hover:translate-y-0 cursor-default" 
+                            : "btn-primary"
+                        }`}
                       >
-                        Quick Apply
+                        {applyingIds.has(job.id) ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Applying...
+                          </span>
+                        ) : job.is_applied ? (
+                          "Already Applied"
+                        ) : (
+                          "Quick Apply"
+                        )}
                       </button>
                       <a
                         href={job.apply_link}

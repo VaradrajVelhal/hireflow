@@ -32,6 +32,10 @@ class ApplicationCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        job_id = request.data.get("job")
+        if Application.objects.filter(user=request.user, job_id=job_id).exists():
+            return Response({"error": "You already applied for this job"}, status=400)
+
         serializer = ApplicationSerializer(data=request.data)
 
         if serializer.is_valid():

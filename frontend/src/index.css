@@ -26,11 +26,11 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none hover:-translate-y-0.5;
   }
   
   .btn-primary {
-    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40;
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-[1.02];
   }
   
   .btn-secondary {
@@ -38,15 +38,15 @@
   }
   
   .btn-danger {
-    @apply bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-lg shadow-rose-500/20;
+    @apply bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-lg shadow-rose-500/20 hover:scale-[1.02];
   }
   
   .card {
-    @apply bg-slate-900 border-slate-800 rounded-3xl transition-all duration-500 overflow-hidden shadow-none hover:shadow-indigo-500/5;
+    @apply bg-slate-900 border-slate-800 rounded-3xl transition-all duration-500 overflow-hidden shadow-none hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 hover:border-slate-700;
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-slate-800 border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none text-white placeholder:text-slate-500;
+    @apply w-full px-4 py-3 bg-slate-800 border-slate-700 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none text-white placeholder:text-slate-500 hover:border-slate-600;
   }
 
   .glass {

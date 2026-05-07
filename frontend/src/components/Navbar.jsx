@@ -48,13 +48,16 @@ function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 ${
+              className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-300 relative group/link ${
                 location.pathname === link.path
-                  ? "bg-slate-800 text-indigo-400 shadow-sm"
-                  : "text-slate-400 hover:text-indigo-400"
+                  ? "bg-indigo-600/10 text-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.1)]"
+                  : "text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50"
               }`}
             >
               {link.name}
+              {location.pathname === link.path && (
+                <span className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></span>
+              )}
             </Link>
           ))}
         </div>

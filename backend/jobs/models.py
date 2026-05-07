@@ -29,6 +29,9 @@ class Application(models.Model):
     follow_up_date = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
     applied_via = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        unique_together = ('user', 'job')
 
     def __str__(self):
         return f"{self.user} - {self.job}"
