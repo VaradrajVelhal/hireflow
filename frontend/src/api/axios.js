@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://hireflow-1-qr4c.onrender.com/api/",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api/",
 });
 
 API.interceptors.request.use((req) => {

@@ -42,7 +42,7 @@ class RegisterView(APIView):
             </a>
             """
 
-            # ✅ SendGrid API (NOT SMTP)
+            # SendGrid API (NOT SMTP)
             try:
                 message = Mail(
                     from_email="varadrajvelhal1@gmail.com",  # MUST match SendGrid verified sender
