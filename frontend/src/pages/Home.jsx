@@ -9,15 +9,14 @@ function Home() {
       <header className="relative pt-24 pb-40 overflow-hidden bg-white dark:bg-slate-950 transition-colors">
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-800 text-sm font-black uppercase tracking-widest mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            Now with AI Match Scoring
+            Smart Job Match Scoring
           </div>
           <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 dark:text-white mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
             Land your dream job <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400">faster than ever.</span>
           </h1>
           <p className="max-w-3xl mx-auto text-xl text-slate-600 dark:text-slate-400 mb-12 leading-relaxed animate-in fade-in slide-in-from-bottom-12 duration-1000">
-            The ultimate job tracking and discovery platform. Aggregate listings, 
-            automate follow-ups, and get smart insights to boost your career trajectory.
+            Discover opportunities, track applications, schedule follow-ups, and manage your job search in one place.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-16 duration-1000">
             {token ? (

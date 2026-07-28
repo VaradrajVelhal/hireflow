@@ -34,6 +34,7 @@ function Login() {
     try {
       const res = await API.post("login/", form);
       localStorage.setItem("token", res.data.access);
+      localStorage.setItem("refreshToken", res.data.refresh);
       navigate("/jobs");
     } catch (err) {
       console.error(err);

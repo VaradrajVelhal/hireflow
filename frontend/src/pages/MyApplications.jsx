@@ -1,13 +1,37 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import API from "../api/axios";
 import Modal from "../components/Modal";
+import { useToast } from "../context/ToastContext";
 
 function MyApplications() {
+  const { showToast } = useToast();
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingApp, setEditingApp] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
+
+  // Add Application State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [addErrors, setAddErrors] = useState({});
+  const [addForm, setAddForm] = useState({
+    title: "",
+    company: "",
+    location: "",
+    apply_link: "",
+    status: "saved",
+    applied_date: "",
+    follow_up_date: "",
+    applied_via: "LinkedIn",
+    notes: ""
+  });
+
+  // Delete Confirmation State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [appToDelete, setAppToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -32,27 +56,118 @@ function MyApplications() {
     e.preventDefault();
     setUpdateLoading(true);
     try {
-      await API.put(`application/${editingApp.id}/`, editingApp);
+      const payload = {
+        ...editingApp,
+        job: editingApp.job?.id || editingApp.job,
+      };
+      await API.put(`application/${editingApp.id}/`, payload);
       setIsModalOpen(false);
       fetchApplications();
-      alert("Application updated successfully!");
+      showToast("Application updated successfully.", "success");
     } catch (err) {
       console.error(err);
-      alert("Failed to update application");
+      showToast("Failed to update application. Please try again.", "error");
     } finally {
       setUpdateLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to remove this application?")) return;
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    setAddLoading(true);
+    setAddErrors({});
+
+    const errors = {};
+    if (!addForm.title.trim()) {
+      errors.title = "Job title is required.";
+    }
+    if (!addForm.company.trim()) {
+      errors.company = "Company name is required.";
+    }
+    if (!addForm.status) {
+      errors.status = "Application status is required.";
+    }
+    if (addForm.status !== "saved" && !addForm.applied_date) {
+      errors.applied_date = "Applied date is required for this status.";
+    }
+    if (addForm.applied_date && addForm.follow_up_date) {
+      if (addForm.follow_up_date < addForm.applied_date) {
+        errors.follow_up_date = "Follow-up date cannot be before applied date.";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setAddErrors(errors);
+      setAddLoading(false);
+      return;
+    }
+
     try {
-      await API.delete(`application/delete/${id}/`);
+      const payload = {
+        ...addForm,
+        applied_date: addForm.applied_date || null,
+        follow_up_date: addForm.follow_up_date || null,
+      };
+      await API.post("applications/manual/", payload);
+      setAddForm({
+        title: "",
+        company: "",
+        location: "",
+        apply_link: "",
+        status: "saved",
+        applied_date: "",
+        follow_up_date: "",
+        applied_via: "LinkedIn",
+        notes: ""
+      });
+      setIsAddModalOpen(false);
       fetchApplications();
+      showToast("Application added successfully.", "success");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete application");
+      if (err.response && err.response.data) {
+        const data = err.response.data;
+        if (typeof data === "object" && !Array.isArray(data)) {
+          const fieldErrors = {};
+          Object.keys(data).forEach((key) => {
+            const val = data[key];
+            fieldErrors[key] = Array.isArray(val) ? val[0] : val;
+          });
+          setAddErrors(fieldErrors);
+        } else if (typeof data === "string") {
+          setAddErrors({ general: data });
+        } else {
+          setAddErrors({ general: "Failed to add application. Please check your details." });
+        }
+      } else {
+        setAddErrors({ general: "Network error. Please try again." });
+      }
+    } finally {
+      setAddLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!appToDelete) return;
+    setDeleteLoading(true);
+    try {
+      await API.delete(`application/delete/${appToDelete.id}/`);
+      setIsDeleteModalOpen(false);
+      setAppToDelete(null);
+      fetchApplications();
+      showToast("Application deleted successfully.", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to delete application. Please try again.", "error");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (deleteLoading) return;
+    setIsDeleteModalOpen(false);
+    setAppToDelete(null);
   };
 
   const getStatusStyles = (status) => {
@@ -92,8 +207,16 @@ function MyApplications() {
             Track and manage your active job search pipeline.
           </p>
         </div>
-        <div className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-800 font-bold">
-          {apps.length} active applications
+        <div className="flex flex-wrap items-center gap-4">
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="btn btn-primary px-6 py-3 font-bold text-sm"
+          >
+            + Add Application
+          </button>
+          <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl border border-indigo-100 dark:border-indigo-800 font-bold text-sm">
+            {apps.length} active applications
+          </div>
         </div>
       </div>
 
@@ -106,9 +229,19 @@ function MyApplications() {
           </div>
           <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Nothing tracked yet</h3>
           <p className="text-slate-500 dark:text-slate-400 mt-3 max-w-sm mx-auto text-lg leading-relaxed">
-            Start applying to jobs to see your progress dashboard here.
+            Track jobs you've applied to and manage your progress here.
           </p>
-          <a href="/jobs" className="btn btn-primary mt-10 px-10">Explore Jobs</a>
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-10">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="btn btn-primary px-8 cursor-pointer"
+            >
+              + Add Application
+            </button>
+            <Link to="/jobs" className="btn btn-secondary px-8">
+              Explore Jobs
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6">
@@ -130,24 +263,65 @@ function MyApplications() {
               )}
 
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
+                <div className="space-y-4 w-full md:max-w-2xl">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className={`px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest border shadow-sm ${getStatusStyles(app.status)}`}>
                       {app.status}
                     </span>
-                    <span className="text-slate-400 dark:text-slate-500 text-sm font-bold flex items-center">
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 20l4-16m2 16l4-16" />
-                      </svg>
-                      {app.job}
-                    </span>
+                    {app.job?.location && (
+                      <span className="text-slate-500 dark:text-slate-400 text-xs font-black uppercase tracking-wider flex items-center bg-slate-100 dark:bg-slate-800/80 px-3 py-1 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                        <svg className="w-3.5 h-3.5 mr-1 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {app.job.location}
+                      </span>
+                    )}
+                    {app.job?.apply_link && (
+                      <a 
+                        href={app.job.apply_link} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-xs font-black uppercase tracking-wider flex items-center bg-indigo-50 dark:bg-indigo-950/20 px-3 py-1 rounded-xl border border-indigo-100 dark:border-indigo-900/30 hover:underline"
+                      >
+                        <span>View Job Link</span>
+                        <svg className="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                      {app.job?.title || "Untitled Job"}
+                    </h3>
+                    <p className="text-indigo-600 dark:text-indigo-400 text-base font-bold mt-0.5">
+                      {app.job?.company || "Unknown Company"}
+                    </p>
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                    {app.applied_date && (
+                      <div className="flex items-center text-slate-600 dark:text-slate-400">
+                        <div className="p-2 rounded-xl mr-3 bg-slate-100 dark:bg-slate-800 text-slate-400">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Applied</span>
+                          <span className="text-slate-900 dark:text-slate-100 font-bold">
+                            {app.applied_date}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center text-slate-600 dark:text-slate-400">
                       <div className={`p-2 rounded-xl mr-3 ${app.follow_up_date === today ? "bg-rose-100 text-rose-600" : "bg-slate-100 dark:bg-slate-800 text-slate-400"}`}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <div className="flex flex-col">
@@ -166,7 +340,7 @@ function MyApplications() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Source</span>
-                        <span className="text-slate-900 dark:text-slate-100 font-bold">{app.applied_via}</span>
+                        <span className="text-slate-900 dark:text-slate-100 font-bold">{app.applied_via || "N/A"}</span>
                       </div>
                     </div>
                   </div>
@@ -188,8 +362,11 @@ function MyApplications() {
                     Edit Status
                   </button>
                   <button 
-                    onClick={() => handleDelete(app.id)}
-                    className="p-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-all border border-transparent hover:border-rose-100 dark:hover:border-rose-800"
+                    onClick={() => {
+                      setAppToDelete(app);
+                      setIsDeleteModalOpen(true);
+                    }}
+                    className="p-2.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-all border border-transparent hover:border-rose-100 dark:hover:border-rose-800 cursor-pointer"
                     title="Delete Application"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,6 +446,248 @@ function MyApplications() {
             </div>
           </form>
         )}
+      </Modal>
+
+      {/* Add Application Modal */}
+      <Modal 
+        isOpen={isAddModalOpen} 
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setAddErrors({});
+        }}
+        title="Add External Application"
+      >
+        <form onSubmit={handleAddSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1">
+          {addErrors.general && (
+            <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 text-rose-600 dark:text-rose-400 rounded-2xl text-sm font-bold flex items-center">
+              <span>{addErrors.general}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Job Title *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Frontend Engineer"
+                className="input-field"
+                value={addForm.title}
+                onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
+              />
+              {addErrors.title && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.title}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Company *
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Google"
+                className="input-field"
+                value={addForm.company}
+                onChange={(e) => setAddForm({ ...addForm, company: e.target.value })}
+              />
+              {addErrors.company && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.company}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Location
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Remote / London"
+                className="input-field"
+                value={addForm.location}
+                onChange={(e) => setAddForm({ ...addForm, location: e.target.value })}
+              />
+              {addErrors.location && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.location}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Job URL
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. https://linkedin.com/..."
+                className="input-field"
+                value={addForm.apply_link}
+                onChange={(e) => setAddForm({ ...addForm, apply_link: e.target.value })}
+              />
+              {addErrors.apply_link && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.apply_link}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Status *
+              </label>
+              <select
+                className="input-field cursor-pointer"
+                value={addForm.status}
+                onChange={(e) => setAddForm({ ...addForm, status: e.target.value })}
+              >
+                <option value="saved">Saved</option>
+                <option value="applied">Applied</option>
+                <option value="interview">Interview</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              {addErrors.status && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.status}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Applied Date {addForm.status !== "saved" && "*"}
+              </label>
+              <input
+                type="date"
+                className="input-field"
+                value={addForm.applied_date}
+                onChange={(e) => setAddForm({ ...addForm, applied_date: e.target.value })}
+              />
+              {addErrors.applied_date && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.applied_date}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+                Follow-up Date
+              </label>
+              <input
+                type="date"
+                className="input-field"
+                value={addForm.follow_up_date}
+                onChange={(e) => setAddForm({ ...addForm, follow_up_date: e.target.value })}
+              />
+              {addErrors.follow_up_date && (
+                <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.follow_up_date}</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+              Applied Via
+            </label>
+            <select
+              className="input-field cursor-pointer"
+              value={addForm.applied_via}
+              onChange={(e) => setAddForm({ ...addForm, applied_via: e.target.value })}
+            >
+              <option value="LinkedIn">LinkedIn</option>
+              <option value="Company Website">Company Website</option>
+              <option value="Referral">Referral</option>
+              <option value="Campus Placement">Campus Placement</option>
+              <option value="Indeed">Indeed</option>
+              <option value="Other">Other</option>
+            </select>
+            {addErrors.applied_via && (
+              <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.applied_via}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 ml-1">
+              Notes
+            </label>
+            <textarea
+              className="input-field min-h-[100px] resize-none"
+              placeholder="e.g. Applied via referral from X. Technical round next week."
+              value={addForm.notes}
+              onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
+            />
+            {addErrors.notes && (
+              <p className="text-xs text-rose-500 font-bold mt-1.5 ml-1">{addErrors.notes}</p>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddModalOpen(false);
+                setAddErrors({});
+              }}
+              className="btn btn-secondary flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={addLoading}
+              className="btn btn-primary flex-1"
+            >
+              {addLoading ? "Adding..." : "Add Application"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={deleteLoading ? undefined : handleCloseDeleteModal}
+        title="Delete Application"
+      >
+        <div className="space-y-6 text-center">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-100 dark:border-rose-900/50 text-rose-500">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white">
+              Delete Application?
+            </h4>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium leading-relaxed">
+              Are you sure you want to remove your application for{" "}
+              <span className="font-black text-rose-600 dark:text-rose-400 block mt-1 text-base">
+                &quot;{appToDelete?.job?.title} at {appToDelete?.job?.company}&quot;
+              </span>
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider pt-2">
+              This action cannot be undone.
+            </p>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              disabled={deleteLoading}
+              onClick={handleCloseDeleteModal}
+              className="btn btn-secondary flex-1 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={deleteLoading}
+              onClick={handleDelete}
+              className="btn btn-danger flex-1 cursor-pointer"
+            >
+              {deleteLoading ? "Deleting..." : "Delete Application"}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

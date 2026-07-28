@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from .models import Application, Job
-from .serializers import ApplicationSerializer, JobSerializer
+from .serializers import ApplicationSerializer, JobSerializer, ManualApplicationSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from django.utils.timezone import now
@@ -10,11 +11,14 @@ from datetime import timedelta
 from rest_framework.generics import ListAPIView
 from datetime import date
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+
 class JobListView(ListAPIView):
     serializer_class = JobSerializer
 
     def get_queryset(self):
-        jobs = Job.objects.all()
+        jobs = Job.objects.exclude(source="manual")
 
         location = self.request.GET.get('location')
         keyword = self.request.GET.get('keyword')
@@ -53,6 +57,20 @@ class ApplicationCreateView(APIView):
             return Response(ApplicationSerializer(application).data)
 
         return Response(serializer.errors, status=400)
+
+
+class ManualApplicationCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ManualApplicationSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            application = serializer.save()
+            return Response(
+                ApplicationSerializer(application, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ApplicationUpdateView(APIView):
@@ -139,22 +157,32 @@ class DueTodayView(APIView):
     def get(self, request):
         today = date.today()
 
-        apps = Application.objects.filter(
+        apps_today = Application.objects.filter(
             user=request.user,
             follow_up_date=today
-        )
+        ).exclude(status="rejected")
 
-        serializer = ApplicationSerializer(apps, many=True)
+        apps_overdue = Application.objects.filter(
+            user=request.user,
+            follow_up_date__lt=today
+        ).exclude(status="rejected")
 
         return Response({
-            "count": apps.count(),
-            "applications": serializer.data
+            "count": apps_today.count(),
+            "applications": ApplicationSerializer(apps_today, many=True, context={'request': request}).data,
+            "overdue_count": apps_overdue.count(),
+            "overdue_applications": ApplicationSerializer(apps_overdue, many=True, context={'request': request}).data
         })
     
 
 from .tasks import fetch_jobs_from_api
 from rest_framework.decorators import api_view
-@api_view(['GET'])
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
 def fetch_jobs_now(request):
-    fetch_jobs_from_api()
-    return Response({"message": "Jobs fetched"})
+    summary = fetch_jobs_from_api()
+
+    return Response({
+        "message": "Jobs fetched successfully.",
+        "summary": summary
+    })

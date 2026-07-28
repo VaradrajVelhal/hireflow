@@ -9,9 +9,12 @@ import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import ScrollToTop from "./components/ScrollToTop";
+import { ToastProvider } from "./context/ToastContext";
+
 function App() {
   return (
-    <Router>
+    <ToastProvider>
+      <Router>
       <ScrollToTop />
       <Navbar />
       <Routes>
@@ -45,7 +48,8 @@ function App() {
           }
         />
       </Routes>
-    </Router>
+      </Router>
+    </ToastProvider>
   );
 }
 

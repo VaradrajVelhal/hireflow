@@ -1,0 +1,82 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    container_name: hireflow_backend_dev
+
+    command: >
+      sh -c "
+      echo 'HireFlow Backend';
+      echo 'Backend: http://localhost:8000';
+      python manage.py runserver 0.0.0.0:8000
+      "
+
+    volumes:
+      - ./backend:/app
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/hireflow_db
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+  frontend:
+    image: node:22-alpine
+
+    container_name: hireflow_frontend_dev
+
+    working_dir: /app
+
+    command: >
+      sh -c "
+      echo 'HireFlow Frontend';
+      echo 'Frontend: http://localhost:5173';
+      npm install &&
+      npm run dev -- --host 0.0.0.0
+      "
+
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
+
+  db:
+    image: postgres:17
+
+    container_name: hireflow_postgres_dev
+
+    environment:
+      POSTGRES_DB: hireflow_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    volumes:
+      - hireflow_postgres_dev_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hireflow_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  hireflow_postgres_dev_data:
+
+# docker compose -f docker-compose.dev.yml up

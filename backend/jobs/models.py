@@ -4,10 +4,10 @@ from django.conf import settings
 class Job(models.Model):
     title = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
-    salary = models.IntegerField()
+    location = models.CharField(max_length=255, blank=True)
+    salary = models.IntegerField(null=True, blank=True)
     source = models.CharField(max_length=50)  # api/manual/dataset
-    description = models.TextField()
+    description = models.TextField(blank=True)
     apply_link = models.URLField(blank=True)
     
 

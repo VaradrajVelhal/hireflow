@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import API from "../api/axios";
+import { useToast } from "../context/ToastContext";
 
 function Jobs() {
+  const { showToast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [page, setPage] = useState(1);
   const [nextPage, setNextPage] = useState(null);
@@ -54,10 +56,10 @@ function Jobs() {
         job_id: jobId,
         skills: skills,
       });
-      alert(`Match Score: ${res.data.match_score}%`);
+      showToast(`Match Score: ${res.data.match_score}%`, "info");
     } catch (err) {
       console.error(err);
-      alert("Error calculating match score");
+      showToast("Error calculating match score. Please try again.", "error");
     }
   };
 
@@ -77,11 +79,11 @@ function Jobs() {
         job.id === jobId ? { ...job, is_applied: true } : job
       ));
       
-      alert("Applied successfully!");
+      showToast("Applied successfully!", "success");
     } catch (err) {
       console.error(err);
       const errorMsg = err.response?.data?.error || "Error applying";
-      alert(errorMsg);
+      showToast(errorMsg, "error");
     } finally {
       setApplyingIds((prev) => {
         const next = new Set(prev);
@@ -219,12 +221,12 @@ function Jobs() {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Applying...
+                            Tracking...
                           </span>
                         ) : job.is_applied ? (
-                          "Already Applied"
+                          "Tracked"
                         ) : (
-                          "Quick Apply"
+                          "Track Application"
                         )}
                       </button>
                       <a
