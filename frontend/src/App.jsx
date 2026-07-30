@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Jobs from "./pages/Jobs";
 import MyApplications from "./pages/MyApplications";
 import Dashboard from "./pages/Dashboard";
+import ProfilePage from "./pages/ProfilePage";
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 import Home from "./pages/Home";
@@ -26,6 +27,14 @@ function App() {
           element={
             <PrivateRoute>
               <Jobs />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           }
         />

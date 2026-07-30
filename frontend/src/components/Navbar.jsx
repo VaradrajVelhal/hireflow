@@ -17,6 +17,7 @@ function Navbar() {
   const navLinks = [
     { name: "Home", path: "/", show: true },
     { name: "Jobs", path: "/jobs", show: !!token },
+    { name: "Profile", path: "/profile", show: !!token },
     { name: "Applications", path: "/applications", show: !!token },
     { name: "Dashboard", path: "/dashboard", show: !!token },
   ];

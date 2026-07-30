@@ -15,7 +15,11 @@ from datetime import timedelta
 from decouple import config
 import os
 import dj_database_url
+from dotenv import load_dotenv
 
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -35,6 +39,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 # 'id="qlc5b8"'
 INSTALLED_APPS = [
+    'profiles.apps.ProfilesConfig',
     'corsheaders',
     'django_crontab',
     'jobs',
@@ -148,3 +153,5 @@ CRONJOBS = [
 CORS_ALLOW_ALL_ORIGINS = True
 EMAIL_TIMEOUT = 10
 SENDGRID_API_KEY = config('SENDGRID_API_KEY')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
