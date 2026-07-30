@@ -264,7 +264,7 @@ Generate
 ## Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/HireFlow.git
+git clone https://github.com/VaradrajVelhal/HireFlow.git
 
 cd HireFlow
 ```
@@ -351,32 +351,6 @@ VITE_API_URL=http://localhost:8000/api
 
 ---
 
-# 📸 Screenshots
-
-## Dashboard
-
-_Add Screenshot_
-
----
-
-## Profile Page
-
-_Add Screenshot_
-
----
-
-## Resume Upload
-
-_Add Screenshot_
-
----
-
-## AI Match Result
-
-_Add Screenshot_
-
----
-
 # 🚀 Future Improvements
 
 - Email notifications
@@ -432,8 +406,8 @@ python manage.py test
 
 MCA Student | Full Stack Developer
 
-- LinkedIn: https://linkedin.com/in/your-profile
-- GitHub: https://github.com/your-username
+- LinkedIn: https://www.linkedin.com/in/varadrajvelhal/
+- GitHub: https://github.com/VaradrajVelhal
 
 ---
 
