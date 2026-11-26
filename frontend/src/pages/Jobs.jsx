@@ -12,6 +12,8 @@ import InterviewTopics from "../components/InterviewTopics";
 import LoadingState from "../components/LoadingState";
 import ErrorState from "../components/ErrorState";
 import ResumeImprovements from "../components/ResumeImprovements";
+import JobDescription from "../components/JobDescription";
+import JobDetailsModal from "../components/JobDetailsModal";
 
 function Jobs() {
   const { showToast } = useToast();
@@ -32,6 +34,7 @@ function Jobs() {
   
   // Custom fetch errors and redirection state
   const [fetchError, setFetchError] = useState(null);
+  const [detailJob, setDetailJob] = useState(null);
   const [pendingRedirectJob, setPendingRedirectJob] = useState(null);
   const [pendingTrackJob, setPendingTrackJob] = useState(null);
   const [redirecting, setRedirecting] = useState(false);
@@ -260,7 +263,13 @@ function Jobs() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                          {job.title}
+                          <button
+                            type="button"
+                            onClick={() => setDetailJob(job)}
+                            className="text-left cursor-pointer hover:underline underline-offset-4 focus:outline-none"
+                          >
+                            {job.title}
+                          </button>
                         </h3>
                         <div className="flex flex-wrap items-center gap-y-2 gap-x-6 mt-2">
                           <span className="text-slate-700 dark:text-slate-300 font-semibold">{job.company}</span>
@@ -275,11 +284,18 @@ function Jobs() {
                           </span>
                         </div>
                         
-                        {/* Short Description (Truncated using line-clamp) */}
+                        {/* Short Sanitized Description Preview */}
                         {job.description && (
-                          <p className="text-slate-650 dark:text-slate-400 text-sm mt-3 leading-relaxed line-clamp-2 max-w-4xl font-medium">
-                            {job.description}
-                          </p>
+                          <div className="mt-3">
+                            <JobDescription description={job.description} variant="preview" />
+                            <button
+                              type="button"
+                              onClick={() => setDetailJob(job)}
+                              className="mt-1.5 text-xs font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer"
+                            >
+                              View details →
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -375,6 +391,17 @@ function Jobs() {
           )}
         </>
       )}
+
+      {/* Job Details Modal Overlay */}
+      <JobDetailsModal
+        job={detailJob}
+        onClose={() => setDetailJob(null)}
+        onAnalyzeMatch={handleAnalyzeMatch}
+        onTrackApplication={setPendingTrackJob}
+        onOpenExternal={setPendingRedirectJob}
+        isAnalyzing={status === "loading"}
+        isApplying={detailJob ? applyingIds.has(detailJob.id) : false}
+      />
 
       {/* AI Resume Match Modal Overlay */}
       {selectedJob && (

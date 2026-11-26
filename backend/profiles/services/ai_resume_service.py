@@ -1,12 +1,23 @@
 import json
+import re
 
 from django.conf import settings
 from google import genai
+from google.genai import types
+
+from .ai_match_service import AIConfigurationError, GEMINI_MODEL, _parse_json_response
 
 
 class AIResumeService:
     def __init__(self):
-        self.client = genai.Client(api_key=settings.GEMINI_API_KEY)
+        api_key = getattr(settings, "GEMINI_API_KEY", None)
+        if not api_key or not str(api_key).strip():
+            raise AIConfigurationError("GEMINI_API_KEY is not configured.")
+
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(timeout=25000),
+        )
 
     def extract_resume_data(self, resume_text):
         prompt = f"""
@@ -41,15 +52,11 @@ Return ONLY valid JSON in this exact format:
 """
 
         response = self.client.models.generate_content(
-            model="gemini-3.5-flash-lite",
+            model=GEMINI_MODEL,
             contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
         )
 
-        text = response.text.strip()
-
-        # Remove markdown code fences if present
-        if text.startswith("```"):
-            lines = text.splitlines()
-            text = "\n".join(lines[1:-1])
-
-        return json.loads(text)
+        return _parse_json_response(getattr(response, "text", None))

@@ -4,7 +4,6 @@ from datetime import date
 from django.core.mail import send_mail
 from django.conf import settings
 from .models import Application, Job
-from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +89,7 @@ def fetch_jobs_from_api():
                 continue
 
             location = item.get("candidate_required_location") or ""
-            html_description = item.get("description") or ""
-
-            description = BeautifulSoup(
-                html_description,
-                "html.parser"
-            ).get_text(separator=" ", strip=True)
+            description = item.get("description") or ""
             apply_link = item.get("url") or ""
 
             Job.objects.create(

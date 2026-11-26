@@ -27,24 +27,34 @@ export function useMatchAnalysis() {
         setStatus("success");
         showToast("Resume analysis complete!", "success");
       } catch (err) {
+        const httpStatus = err.response?.status;
         const isTimeout = err.code === "ECONNABORTED" || err.message?.includes("timeout");
         const isNetworkError = err.message?.includes("Network Error") || !err.response;
-        const isTemporaryStatus = err.response?.status === 504 || err.response?.status === 503 || err.response?.status === 408;
+        const isRetryableStatus =
+          httpStatus === 504 || httpStatus === 503 || httpStatus === 502 || httpStatus === 408;
 
-        if (!retry && (isTimeout || isNetworkError || isTemporaryStatus)) {
+        if (!retry && (isTimeout || isNetworkError || isRetryableStatus)) {
           console.warn("Match analysis request failed temporarily. Retrying once...");
           await new Promise((resolve) => setTimeout(resolve, 1000));
           return doAnalysis(id, true);
         }
 
         console.error("Match analysis error:", err);
-        let errMsg = "AI service temporarily unavailable. Please try again.";
-        if (isTimeout || err.response?.status === 504 || err.response?.status === 408) {
+        const serverError = err.response?.data?.error || err.response?.data?.detail;
+        let errMsg = "Unable to analyze resume at the moment. Please try again later.";
+
+        if (httpStatus === 401) {
+          errMsg = "Your session has expired. Please log in again.";
+        } else if (serverError) {
+          errMsg = serverError;
+        } else if (isTimeout || httpStatus === 504 || httpStatus === 408) {
           errMsg = "Analysis took longer than expected. Please try again.";
-        } else if (err.response?.data?.error) {
-          errMsg = err.response.data.error;
+        } else if (httpStatus === 429) {
+          errMsg = "AI rate limit exceeded. Please wait a moment and try again.";
+        } else if (isNetworkError) {
+          errMsg = "Network error while contacting the server. Please check your connection and try again.";
         }
-        
+
         setError(errMsg);
         setStatus("error");
         showToast(errMsg, "error");
